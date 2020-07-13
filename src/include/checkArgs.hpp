@@ -15,11 +15,11 @@ private:
 	const std::string opciones = "-N tam_problema -t threads -l Limite Inferior -L Limite Superior [-h]";
 
 	const std::string descripcion  = "Descripción:\n"
-					"\t-N   Tamaño del problema\n"
-					"\t-t   Cantidad de threads a utilizar\n"
-					"\t-l	Limite inferior de números aleatorios"
-					"\t-L	Limite superior de números aleatorios"
-					"\t-h   Muestra esta ayuda y termina\n";
+		"\t-N	Tamaño del problema\n"
+		"\t-t	Cantidad de threads a utilizar\n"
+		"\t-l	Limite inferior de números aleatorios\n"
+		"\t-L	Limite superior de números aleatorios\n"
+		"\t-h	Muestra esta ayuda y termina\n";
 
 	typedef struct args_t{
 		uint64_t tamProblema;
@@ -27,27 +27,27 @@ private:
 		uint32_t limInferior;
 		uint32_t limSuperior;
 	} args_t;
-	
+
 	// 2) Modificar constructor
 	// 3) Modificar ciclo "getopt" en método checkArgs::getArgs()
 	// 4) Recuerde que para compilar nuevamente, y por tratarse
 	//    de un archivo header, debe hacer primero un make clean
-	
+
 	args_t  parametros;
-	
+
 	int argc;
 	char **argv;
 
-	
+
 public:
 	checkArgs(int _argc , char **_argv);
 	~checkArgs();
 	args_t getArgs();
-	
+
 private:
 	void printUsage();
-	
-	
+
+
 };
 
 checkArgs::checkArgs(int _argc , char **_argv){
@@ -67,7 +67,7 @@ checkArgs::~checkArgs(){
 
 checkArgs::args_t checkArgs::getArgs(){
 	int opcion;
-	
+
 	while ((opcion = getopt (argc, argv, optString.c_str())) != -1){
 		switch (opcion) {
 			case 'N':
@@ -89,7 +89,7 @@ checkArgs::args_t checkArgs::getArgs(){
 		}
 	}
 
-	if ( parametros.tamProblema == 0 || parametros.numThreads  == 0 ) || parametros.limSuperior == 0{
+	if ( parametros.tamProblema == 0 || parametros.numThreads  == 0 || parametros.limSuperior == 0){
 		printUsage();
 		exit(EXIT_FAILURE);
 	}
