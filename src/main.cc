@@ -2,24 +2,21 @@
 #include <checkArgs.hpp>
 
 uint64_t* arreglo = nullptr;
-uint64_t* arregloSecuencial = nullptr;
-uint64_t* arregloParalelo = nullptr;
+
 uint64_t sumaArreglo = 0;
 std::vector<std::thread *> threads;
 std::vector<std::thread *> threadSuma;
 std::mutex mux;
 
+//En esta sección se utilizo una de la funcion thread-safe del ejemplo, para generar números randómicos y llenar los arreglos
 
-void fillArray(size_t beginIdx, size_t endIdx, size_t arrayType){
+void fillArray(size_t beginIdx, size_t endIdx, size_t limInferior, size_t limSuperior){
+	std::random_device device;
+	std::mt19937 rng(device());
+	std::uniform_int_distribution<> unif(limInferior,limSuperior);
+
 	for(size_t i = beginIdx; i < endIdx; i++){
-		switch(arrayType){
-			case 0:
-				arregloSecuencial[i] = arreglo[i];
-				break;
-			case 1:
-				arregloParalelo[i] = arreglo[i];
-				break;
-		}
+		arreglo[i] = unif(rng);
 	}
 }
 
@@ -27,11 +24,10 @@ void fillArray(size_t beginIdx, size_t endIdx, size_t arrayType){
 void sumaParalela(uint32_t beginIdx, uint32_t endIdx){
 	mux.lock();
 	for(uint32_t i = beginIdx; i < endIdx; i++){
-		sumaArreglo += arregloParalelo[i];
+		sumaArreglo += arreglo[i];
 	}
 	mux.unlock();
 }
-
 
 
 int main(int argc, char** argv){
@@ -56,37 +52,27 @@ int main(int argc, char** argv){
 
 	//Etapa de llenado
 
-	//En esta sección se utilizo una de las funciones thread-safe del ejemplo, para generar números randomicos 
-	//que se almacenaran en un arreglo auxiliar
-	arreglo = new uint64_t[totalElementos];
-	std::random_device device;
-	std::mt19937 rng(device());
-	std::uniform_int_distribution<> unif(limInferior,limSuperior);
-	for(uint32_t i=0; i < totalElementos; i++){
-		arreglo[i] = unif(rng);
-	}
-
 	//-------Secuencial-------
-	arregloSecuencial = new uint64_t[totalElementos];
+	arreglo = new uint64_t[totalElementos];
 
 	auto start = std::chrono::high_resolution_clock::now();
 
-	fillArray(0, totalElementos, 0);
+	fillArray(0, totalElementos, limInferior, limSuperior);
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	auto tiempoLlenadoTotal_S = elapsed.count();
 
-
+	delete[] arreglo;
 	//-------Paralelo-------
-	arregloParalelo = new uint64_t[totalElementos];
+	arreglo = new uint64_t[totalElementos];
 
 	start = std::chrono::high_resolution_clock::now();
 
 	//se crean los threads y se distribuye el contenido del primer arreglo auxiliar
 	//gracias a estos el proceso se hace en forma paralela
 	for(size_t i=0; i < numThreads; i++){
-		threads.push_back(new std::thread(fillArray, i*(totalElementos)/numThreads, (i+1)*(totalElementos)/numThreads, 1));
+		threads.push_back(new std::thread(fillArray, i*(totalElementos)/numThreads, (i+1)*(totalElementos)/numThreads, limInferior, limSuperior));
 	}
 
 	for(auto &thFilled : threads){
@@ -101,17 +87,20 @@ int main(int argc, char** argv){
 
 	//Secuencial
 	uint64_t sumaSecuencial=0;
+
 	start = std::chrono::high_resolution_clock::now();
+
 	for(size_t i=0;i<totalElementos;i++){
-		sumaSecuencial += arregloSecuencial[i];
+		sumaSecuencial += arreglo[i];
 	}
+
 	end = std::chrono::high_resolution_clock::now();
 	elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	auto tiempoTotalSuma_S = elapsed.count();
 
 	//Paralela
 	start = std::chrono::high_resolution_clock::now();
-	//De forma similar al llenado 
+	//De forma similar al llenado
 	for(size_t i=0;i<numThreads;i++){
 		threadSuma.push_back(new std::thread(sumaParalela, i*(totalElementos)/numThreads, (i+1)*(totalElementos)/numThreads));
 	}
