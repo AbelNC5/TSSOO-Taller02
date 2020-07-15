@@ -2,11 +2,12 @@
 #include <checkArgs.hpp>
 
 uint64_t* arreglo = nullptr;
-
 uint64_t sumaArreglo = 0;
+
 std::vector<std::thread *> threads;
 std::vector<std::thread *> threadSuma;
 std::mutex mux;
+
 
 //En esta sección se utilizo una de la funcion thread-safe del ejemplo, para generar números randómicos y llenar los arreglos
 
@@ -21,7 +22,8 @@ void fillArray(size_t beginIdx, size_t endIdx, size_t limInferior, size_t limSup
 }
 
 
-void sumaParalela(uint32_t beginIdx, uint32_t endIdx){
+void sumaParcial(uint64_t &sumaArreglo, uint32_t beginIdx, uint32_t endIdx){
+	sumaArreglo=0;
 	mux.lock();
 	for(uint32_t i = beginIdx; i < endIdx; i++){
 		sumaArreglo += arreglo[i];
@@ -90,19 +92,18 @@ int main(int argc, char** argv){
 
 	start = std::chrono::high_resolution_clock::now();
 
-	for(size_t i=0;i<totalElementos;i++){
-		sumaSecuencial += arreglo[i];
-	}
+	sumaParcial(std::ref(sumaSecuencial), 0, totalElementos);
 
 	end = std::chrono::high_resolution_clock::now();
 	elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	auto tiempoTotalSuma_S = elapsed.count();
 
 	//Paralela
+	uint64_t sumaParalela=0;
 	start = std::chrono::high_resolution_clock::now();
 	//De forma similar al llenado
 	for(size_t i=0;i<numThreads;i++){
-		threadSuma.push_back(new std::thread(sumaParalela, i*(totalElementos)/numThreads, (i+1)*(totalElementos)/numThreads));
+		threadSuma.push_back(new std::thread(sumaParcial, std::ref(sumaParalela), i*(totalElementos)/numThreads, (i+1)*(totalElementos)/numThreads));
 	}
 	for(auto &thSuma : threadSuma){
 		thSuma->join();
@@ -114,7 +115,7 @@ int main(int argc, char** argv){
 	//Etapa de Resultados
 
 	std::cout << "Suma secuencial total: " << sumaSecuencial << std::endl;
-	std::cout << "Suma en paralelo total: " << sumaArreglo << std::endl;
+	std::cout << "Suma en paralelo total: " << sumaParalela << std::endl;
 	std::cout << "------- Tiempos de ejecución --------" << std::endl;
 	std::cout << "Tiempo Llenado Secuencial: " << tiempoLlenadoTotal_S << "[ms]" << std::endl;
 	std::cout << "Tiempo Llenado Paralelo: " << tiempoLlenadoTotal_P << "[ms]" << std::endl;
